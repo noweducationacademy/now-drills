@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NOW Education Academy</title>
+<meta name="theme-color" content="#00BFA6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NOW Drills">
+<style>
+  html,body{margin:0;height:100%;background:#F6F6F8;font-family:Calibri,"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#F6F6F8}
+  #msg{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;
+       text-align:center;padding:24px;color:#1A1A1A;font-size:18px;font-weight:600;gap:14px}
+  #msg img{width:120px}
+  #msg button{font:inherit;font-size:16px;border:0;border-radius:10px;padding:12px 22px;background:#AD0797;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<!-- The Student Portal lives in the Academy's Apps Script app; this page just gives it an
+     installable, full-screen home. Change PORTAL if the web app link ever changes. -->
+<iframe id="app" title="NOW Education Academy Student Portal" allow="clipboard-write"></iframe>
+<div id="msg"><img src="icons/icon-192.png" alt=""><div>You&rsquo;re offline.<br>Connect to the internet to sign in.</div>
+  <button onclick="location.reload()">Try again</button></div>
+<script>
+  var PORTAL = 'https://script.google.com/a/macros/noweducationacademy.com/s/AKfycbz6bBHsbF7eJNtCYFHTpfDdHEvNo86E7_6UsOIFj_Ru4nw1ZjwzJk2p58sHTLkGks24/exec?page=student';
+  var app = document.getElementById('app'), msg = document.getElementById('msg');
+  function net(){
+    var on = navigator.onLine;
+    msg.style.display = on ? 'none' : 'flex';
+    app.style.display = on ? 'block' : 'none';
+    if (on && !app.getAttribute('src')) app.src = PORTAL;
+  }
+  addEventListener('online', net); addEventListener('offline', net); net();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>

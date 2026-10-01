@@ -2,6 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
+<script>
+/* Opened directly (not inside the Student Portal)? Send students to the portal login.
+   Add ?drills=1 to the address to open the drills on their own (e.g. for teachers). */
+if (window.parent === window && !/[?&](embed|drills)=1/.test(location.search)) { location.replace('portal.html'); }
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#00BFA6">
 <title>NOW Education Academy Drill Practice</title>
@@ -540,6 +546,8 @@
     body.touch .pad-q{margin-bottom:6px;padding:4px 10px}
     .key{height:40px;font-size:20px}
   }
+  html.embed header, html.embed footer{display:none}
+  html.embed main{padding-top:12px}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 28px;font-weight:600}
 </style>
 </head>
@@ -719,6 +727,18 @@
 <div id="timeup"><div>TIME UP</div></div>
 
 <script>
+/* ======================= STUDENT PORTAL LINK =======================
+   When this app runs inside the NOW Student Portal (in a frame), each finished
+   drill or worksheet is reported to the portal, which saves it to the student's
+   Progress. Opened on its own, nothing is sent anywhere. */
+var EMBED = window.parent!==window;
+if(/[?&]embed=1/.test(location.search)) document.documentElement.classList.add('embed');
+function reportResult(o){
+  if(!EMBED) return;
+  try{ var m={source:'now-drills'}; for(var k in o) m[k]=o[k]; window.parent.postMessage(m,'*'); }catch(_){}
+}
+function secsSince(st){ return st&&st.started ? Math.round((Date.now()-st.started)/1000) : 0; }
+
 /* ======================= CONFIG ======================= */
 var TOTAL = 40, SECONDS = 300, TIMEUP_MS = 2800;
 function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
@@ -983,6 +1003,7 @@ function mark(used){
     if(ok) right++;
   });
   $('score').textContent=right+'/40';
+  reportResult({activity:'Mental Math Drill',detail:drill.name,score:right,outOf:TOTAL,seconds:used});
   var pct=Math.round(right/TOTAL*100);
   var msg = pct===100?'Perfect drill! Outstanding work.':pct>=85?'Excellent — you are really understanding it!':
             pct>=70?'Great effort! Review the red answers and go again.':'Keep practising — every drill builds your brain!';
@@ -1192,6 +1213,7 @@ function skFinish(){
   $('skTime').textContent=fmtTime(sec);
   document.body.classList.add('skipdone');
   var stars=SK.miss===0?3:SK.miss<=2?2:1;
+  reportResult({activity:'Skip Counting',detail:'By '+SK.n+(SK.miss?' · '+SK.miss+' oops':' · no mistakes'),score:stars,outOf:3,seconds:sec});
   var prev=+store('nea-skip-'+SK.n), isBest=!prev||sec<prev;
   if(isBest) store('nea-skip-'+SK.n,String(sec));
   $('skStars').innerHTML=[1,2,3].map(function(i){return '<span class="'+(i<=stars?'':'off')+'">★</span>';}).join('');
@@ -1258,7 +1280,7 @@ function nbMake(){
 }
 function nbAnswer(q){ return q.miss==='w'?q.whole:q[q.miss]; }
 function nbReset(){
-  NB.qs=nbMake(); NB.vals=NB.qs.map(function(){return '';}); NB.cur=0; NB.checked=false; NB.warned=false;
+  NB.qs=nbMake(); NB.vals=NB.qs.map(function(){return '';}); NB.started=Date.now(); NB.cur=0; NB.checked=false; NB.warned=false;
   document.body.classList.remove('nbdone');
   $('nbTitle').innerHTML = NB.key==='random'
     ? 'Number Bonds · <b>Mixed</b><small>12 bonds with different totals · find the missing number</small>'
@@ -1347,6 +1369,7 @@ function nbCheck(){
   });
   nbSelect(NB.cur,true);
   $('nbScore').textContent=right+'/12'; $('nbCheck').disabled=true;
+  reportResult({activity:'Number Bonds',detail:NB.key==='random'?'Random':'Bonds to '+NB.key,score:right,outOf:12,seconds:secsSince(NB)});
   var pct=Math.round(right/12*100);
   $('nbResultBig').textContent=right+' / 12  ·  '+pct+'%';
   $('nbResultMsg').textContent = right===12?'Perfect! You know your number bonds'+(NB.key==='random'?'!':' to '+NB.key+'!'):
@@ -1385,7 +1408,7 @@ function pwIsPow10(n){ return n>=10 && /^10*$/.test(String(n)); }
 function pwBlank(qi,j){ var id='pwb'+qi+'_'+j, attrs=TOUCH?'readonly tabindex="-1" inputmode="none"':'inputmode="numeric" maxlength="9"';
   return '<span class="bl" id="'+id+'"><input id="'+id+'i" '+attrs+' autocomplete="off" aria-label="Blank"></span>'; }
 function pwReset(){
-  PW.qs=pwMake(); PW.blanks=[]; PW.cur=0; PW.checked=false; PW.warned=false;
+  PW.qs=pwMake(); PW.started=Date.now(); PW.blanks=[]; PW.cur=0; PW.checked=false; PW.warned=false;
   document.body.classList.remove('pwdone');
   var L=$('pwList'); L.innerHTML='';
   PW.qs.forEach(function(q,i){
@@ -1475,6 +1498,7 @@ function pwCheck(){
   });
   pwSelect(PW.cur,true);
   $('pwScore').textContent=right+'/10'; $('pwCheck').disabled=true;
+  reportResult({activity:'Powers of 10',detail:'Multiplying by powers of 10',score:right,outOf:10,seconds:secsSince(PW)});
   $('pwResultBig').textContent=right+' / 10  ·  '+(right*10)+'%';
   $('pwResultMsg').textContent = right===10?'Perfect! You are a powers-of-10 pro!':right>=7?'Great work! Check the red questions to see the right answers.':'Good try! Remember to count the zeros — try a new worksheet.';
   $('pwResult').classList.add('show');
@@ -1534,7 +1558,7 @@ function rgBuildTabs(){
   });
 }
 function rgReset(){
-  RG.qs=[]; for(var i=0;i<10;i++) RG.qs.push(rgMakeQ());
+  RG.qs=[]; RG.started=Date.now(); for(var i=0;i<10;i++) RG.qs.push(rgMakeQ());
   RG.sel=null; RG.checked=false; RG.warned=false;
   document.body.classList.remove('rgdone','rg-typing');
   $('rgTitle').innerHTML='Regrouping · <b>'+(RG.kind==='pos'?'Positive':'Mixed')+' Integers</b><small>10 questions · pair to make multiples of 10</small>';
@@ -1704,6 +1728,7 @@ function rgCheck(){
     rows+=r1+r2+r3; if(r1&&r2&&r3){ full++; card.classList.add('ok'); }
   });
   $('rgScore').textContent=rows+'/30'; $('rgCheck').disabled=true;
+  reportResult({activity:'Regrouping',detail:RG.kind==='pos'?'Positive Integers':'Mixed Integers',score:rows,outOf:30,seconds:secsSince(RG)});
   $('rgResultBig').textContent=rows+' / 30  ·  '+Math.round(rows/30*100)+'%';
   $('rgResultMsg').textContent=full+' of 10 questions fully correct. '+(full===10?'Brilliant regrouping!':'Look for the red ✗ to see which line needs another look.');
   $('rgResult').classList.add('show');
@@ -1853,7 +1878,7 @@ function psReset(){
     while(PS.qs.length<3){ var rest=pool.filter(function(i){return PS.qs.indexOf(i)<0;}); PS.qs.push(rest[0]); }
     PS.qs=shuffle(PS.qs);
   } else PS.qs=shuffle(pool).slice(0,3);
-  PS.last[PS.level]=PS.qs.slice(); PS.checked=false; PS.warned=false;
+  PS.last[PS.level]=PS.qs.slice(); PS.checked=false; PS.warned=false; PS.started=Date.now();
   PS.total = PS.style==='free' ? 6 : PS.qs.reduce(function(t,i){ return t+(bank[i].type==='first'?4:3); },0);
   $('psTitle').innerHTML='Problem Solving · <b>Consecutive Problems</b><small>Level '+PS.level+' · '+(PS.style==='free'?'no bonds · write the equation, solve it, sentence answer':'number bond, equation, sentence answer')+'</small>';
   $('psHint').innerHTML = PS.level===1
@@ -2000,6 +2025,7 @@ function psCheckFree(bank){
 }
 function psFinish(pts){
   $('psScore').textContent=pts+'/'+PS.total; $('psCheck').disabled=true;
+  reportResult({activity:'Problem Solving',detail:'Consecutive · Level '+PS.level+(PS.style==='free'?' · no bonds':' · bonds'),score:pts,outOf:PS.total,seconds:secsSince(PS)});
   $('psResultBig').textContent=pts+' / '+PS.total+'  ·  '+Math.round(pts/PS.total*100)+'%';
   $('psResultMsg').textContent = pts===PS.total?'Super problem solver! Every part is correct.':'Look at the red ✗ to see what to fix. Remember: the "not" part is first − 1.';
   $('psResult').classList.add('show');
@@ -2053,6 +2079,7 @@ function psCheck(){
     if(r1&&r2&&r3&&r4) $('ps'+qi).classList.add('ok');
   });
   $('psScore').textContent=pts+'/'+PS.total; $('psCheck').disabled=true;
+  reportResult({activity:'Problem Solving',detail:'Consecutive · Level '+PS.level+(PS.style==='free'?' · no bonds':' · bonds'),score:pts,outOf:PS.total,seconds:secsSince(PS)});
   $('psResultBig').textContent=pts+' / '+PS.total+'  ·  '+Math.round(pts/PS.total*100)+'%';
   $('psResultMsg').textContent = pts===PS.total?'Super problem solver! Every part is correct.':'Look at the red ✗ to see what to fix. Remember: the "not" part is first − 1.';
   $('psResult').classList.add('show');

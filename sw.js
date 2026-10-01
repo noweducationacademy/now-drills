@@ -1,8 +1,8 @@
 /* NOW Education Academy – offline support.
    The page is fetched fresh whenever there is internet (so your updates show up right away)
    and the last saved copy is used when there is no internet. */
-const CACHE = 'now-drills-v1';
-const CORE = ['./', './index.html', './manifest.webmanifest',
+const CACHE = 'now-drills-v2';
+const CORE = ['./', './index.html', './portal.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
